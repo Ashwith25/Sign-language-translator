@@ -2,11 +2,11 @@ import numpy as np
 import cv2
 import keras
 from keras.preprocessing.image import ImageDataGenerator
-import tensorflow as tf
+# import tensorflow as tf
 
 word_dict = {0:'One', 1:'Two', 2:'Three'}
 
-model = keras.models.load_model(r"sign_model.h5")
+model = keras.models.load_model("signModel")
 background = None
 accumulated_weight = 0.5
 
