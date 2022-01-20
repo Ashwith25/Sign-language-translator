@@ -29,10 +29,10 @@ def segment_hand(frame, threshold=25):
     global background
     # diff = cv2.absdiff(background.astype("uint8"), frame)
     _ , thresholded = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY)
-    # contours, hierarchy = cv2.findContours(thresholded.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(thresholded.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # if len(contours) == 0:
-    #     return None
+    if len(contours) == 0:
+        return None
     # else:
         # hand_segment_max_cont = max(contours, key=cv2.contourArea)
     return thresholded
