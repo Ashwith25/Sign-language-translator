@@ -45,7 +45,7 @@ cam = cv2.VideoCapture(0)
 detector = HandDetector(detectionCon=0.8, maxHands=2)
 
 num_frames = 0
-element = 2
+element = 'little'
 num_imgs_taken = 0
 
 while True:

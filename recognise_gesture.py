@@ -14,7 +14,7 @@ voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[0].id)
 engine.setProperty('rate',180)
 
-word_dict = {0:'One', 1:'Two', 2:'Three'}
+word_dict = {0:'One', 1:'Two', 2:'Three', 3:'I Love You', 4:'Little'}
 
 model = keras.models.load_model("signModelNew")
 background = None

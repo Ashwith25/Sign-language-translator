@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
         # query = input("Enter the number of sign: ")
 
-        image = 'D:\\gesture\\train\\{}\\0.jpg'.format(query)
+        image = 'D:\\gestures\\train\\{}\\0.jpg'.format(query)
         if query != '':
             try:
                 img = cv2.imread(image)
