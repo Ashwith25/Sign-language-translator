@@ -6,9 +6,17 @@ from cvzone.HandTrackingModule import HandDetector
 import cvzone
 # import tensorflow as tf
 
+import pyttsx3
+
+#audio of system to respond
+engine = pyttsx3.init('sapi5')
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id)
+engine.setProperty('rate',180)
+
 word_dict = {0:'One', 1:'Two', 2:'Three'}
 
-model = keras.models.load_model("signModel")
+model = keras.models.load_model("signModelNew")
 background = None
 accumulated_weight = 0.5
 
@@ -16,6 +24,10 @@ ROI_top = 100
 ROI_bottom = 300
 ROI_right = 150
 ROI_left = 350
+
+def speak(audio):
+    engine.say(audio)
+    engine.runAndWait()
 
 def cal_accum_avg(frame, accumulated_weight):
     global background
@@ -89,7 +101,9 @@ while True:
             thresholded = np.reshape(thresholded, (1,thresholded.shape[0],thresholded.shape[1],3))
 
             pred = model.predict(thresholded)
-            cv2.putText(frame_copy, word_dict[np.argmax(pred)], (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
+            predText = word_dict[np.argmax(pred)]
+            cv2.putText(frame_copy, predText, (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
+            speak(predText)
             
     cv2.rectangle(frame_copy, (ROI_left, ROI_top), (ROI_right, ROI_bottom), (255,128,0), 3)
     num_frames += 1
