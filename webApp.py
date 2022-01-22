@@ -51,7 +51,7 @@ def text_to_sign():
     if st.button("Translate"):
         
         try:
-            image = Image.open('signs\{}.jpg'.format(text))
+            image = Image.open('./signs/{}.jpg'.format(text))
             st.success(f"Translated text is: ")
             st.image(image, caption='Predicted sign')
         except:
