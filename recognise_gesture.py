@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import keras
 from keras.preprocessing.image import ImageDataGenerator
-from cvzone.HandTrackingModule import HandDetector
+from HandTrackingModule import HandDetector
 import cvzone
 # import tensorflow as tf
 
@@ -59,7 +59,7 @@ while True:
     frame_copy = frame.copy()
 
     hands, img = detector.findHands(frame)  # with draw
-    # hands = detector.findHands(img, draw=False)  # without draw
+    # hands = detector.findHands(frame, draw=False)  # without draw
 
     if hands:
         # Hand 1
@@ -76,19 +76,42 @@ while True:
         ROI_right =  bbox1[0] - 20
         ROI_left = bbox1[2] + bbox1[0] + 20
 
-    roi = frame[ROI_top:ROI_bottom, ROI_right:ROI_left]
+        if len(hands) == 2:
+            # Hand 2
+            hand2 = hands[1]
+            # lmList2 = hand2["lmList"]
+            bbox2 = hand2["bbox"]  # Bounding box info x,y,w,h
+            # centerPoint2 = hand2['center']  # center of the hand cx,cy
+            handType2 = hand2["type"]
+
+            fingers2 = detector.fingersUp(hand2)
+
+            # Find Distance between two Landmarks. Could be same hand or different hands
+            # length, info, img = detector.findDistance(lmList1[8], lmList2[8], img)
+
+            absDiff = abs((bbox1[1] + bbox1[3]) - (bbox2[1] + bbox2[3]))
+
+            ROI_top = bbox1[1] - 20 if bbox1[1] < bbox2[1] else bbox2[1] - 20
+            ROI_bottom = bbox1[3] + bbox1[1] + 20 + absDiff if bbox1[1] < bbox2[1] else bbox2[3] + bbox2[1] + 20 + absDiff
+            ROI_right =  bbox1[0] - 20 if handType2 == 'Left' else bbox2[0] - 20
+            ROI_left = bbox1[2] + (bbox1[0] if handType2 == 'Left' else bbox2[0]) + bbox2[2] + 80
+
+
+    roi = frame[ROI_top if ROI_top >= 0 else 0 :ROI_bottom, ROI_right if ROI_right >= 0 else 0:ROI_left]
+    # print(ROI_top if ROI_top >= 0 else 0, ROI_bottom, ROI_right, ROI_left)
     # roi = frame[bbox1[1]:bbox1[3], bbox1[0]:bbox1[2]]
 
     # gray_frame = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     # gray_frame = cv2.GaussianBlur(gray_frame, (9, 9), 0)
-    gray_frame = frame
+    # gray_frame = frame
 
-    if num_frames < 70:
-        pass
+    if not hands:
+        cv2.putText(frame_copy, "No hands detected", (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
         # cal_accum_avg(gray_frame, accumulated_weight)
         # cv2.putText(frame_copy, "FETCHING BACKGROUND...PLEASE WAIT", (80, 400), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
 
     else:
+        # print(roi)
         hand = segment_hand(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY))
         if hand is not None:
             thresholded = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -103,7 +126,7 @@ while True:
             pred = model.predict(thresholded)
             predText = word_dict[np.argmax(pred)]
             cv2.putText(frame_copy, predText, (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
-            speak(predText)
+            # speak(predText)
             
     cv2.rectangle(frame_copy, (ROI_left, ROI_top), (ROI_right, ROI_bottom), (255,128,0), 3)
     num_frames += 1
