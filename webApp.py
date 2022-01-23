@@ -44,42 +44,6 @@ def main():
     elif app_mode == option2:
         text_to_sign()
 
-def stackImages(_imgList, cols, scale):
-    """
-    Stack Images together to display in a single window
-    :param _imgList: list of images to stack
-    :param cols: the num of img in a row
-    :param scale: bigger~1+ ans smaller~1-
-    :return: Stacked Image
-    """
-    imgList = copy.deepcopy(_imgList)
-
-    # make the array full by adding blank img, otherwise the openCV can't work
-    totalImages = len(imgList)
-    rows = totalImages // cols if totalImages // cols * cols == totalImages else totalImages // cols + 1
-    blankImages = cols * rows - totalImages
-
-    width = 75
-    height = 75
-    imgBlank = np.zeros((height, width, 3), np.uint8)
-    imgList.extend([imgBlank] * blankImages)
-
-    # resize the images
-    for i in range(cols * rows):
-        imgList[i] = cv2.resize(imgList[i], (0, 0), None, scale, scale)
-        if len(imgList[i].shape) == 2:
-            imgList[i] = cv2.cvtColor(imgList[i], cv2.COLOR_GRAY2BGR)
-
-    # put the images in a board
-    hor = [imgBlank] * rows
-    for y in range(rows):
-        line = []
-        for x in range(cols):
-            line.append(imgList[y * cols + x])
-        hor[y] = np.hstack(line)
-    ver = np.vstack(hor)
-    return ver
-
 def text_to_sign():
 
     st.markdown(f'<h1 style="color:#33ff33; font-size:24px;">{"Text to Sign Language"}</h1>', unsafe_allow_html=True)
@@ -87,7 +51,7 @@ def text_to_sign():
     text = st.text_area("Enter the text to be translated", "")
     text = text.lower()
     if st.button("Translate"):
-        
+
         # if 'i love you' in text:
         #     text = text.replace('i love you', '')
         #     st.write('I LOVE YOU')
