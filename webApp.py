@@ -1,4 +1,5 @@
 import keras
+from matplotlib.style import use
 from HandTrackingModule import HandDetector
 import cvzone
 
@@ -17,6 +18,7 @@ from streamlit_webrtc import (
 )
 
 from PIL import Image
+import copy
 
 RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
@@ -25,7 +27,6 @@ RTC_CONFIGURATION = RTCConfiguration(
 def main():
     st.header("Indian Sign Language Translation using Human-Computer Interaction")
     
-
     option1 = "Sign Language to Text/Speech"
     option2 = "Text/Speech to Sign Language"
 
@@ -43,19 +44,76 @@ def main():
     elif app_mode == option2:
         text_to_sign()
 
+def stackImages(_imgList, cols, scale):
+    """
+    Stack Images together to display in a single window
+    :param _imgList: list of images to stack
+    :param cols: the num of img in a row
+    :param scale: bigger~1+ ans smaller~1-
+    :return: Stacked Image
+    """
+    imgList = copy.deepcopy(_imgList)
+
+    # make the array full by adding blank img, otherwise the openCV can't work
+    totalImages = len(imgList)
+    rows = totalImages // cols if totalImages // cols * cols == totalImages else totalImages // cols + 1
+    blankImages = cols * rows - totalImages
+
+    width = 75
+    height = 75
+    imgBlank = np.zeros((height, width, 3), np.uint8)
+    imgList.extend([imgBlank] * blankImages)
+
+    # resize the images
+    for i in range(cols * rows):
+        imgList[i] = cv2.resize(imgList[i], (0, 0), None, scale, scale)
+        if len(imgList[i].shape) == 2:
+            imgList[i] = cv2.cvtColor(imgList[i], cv2.COLOR_GRAY2BGR)
+
+    # put the images in a board
+    hor = [imgBlank] * rows
+    for y in range(rows):
+        line = []
+        for x in range(cols):
+            line.append(imgList[y * cols + x])
+        hor[y] = np.hstack(line)
+    ver = np.vstack(hor)
+    return ver
+
 def text_to_sign():
+
     st.markdown(f'<h1 style="color:#33ff33; font-size:24px;">{"Text to Sign Language"}</h1>', unsafe_allow_html=True)
 
     text = st.text_area("Enter the text to be translated", "")
-
+    text = text.lower()
     if st.button("Translate"):
         
-        try:
-            image = Image.open('./signs/{}.jpg'.format(text))
-            st.success(f"Translated text is: ")
-            st.image(image, caption='Predicted sign')
-        except:
-            st.error("No sign recognised")
+        # if 'i love you' in text:
+        #     text = text.replace('i love you', '')
+        #     st.write('I LOVE YOU')
+        #     st.image('./signs/I Love You.jpg', width=75)
+
+        words = text.split()
+        words = [word.upper() for word in words if word not in '.,!?:;']
+        for word in words:
+            if word.lower() in ['little', 'hi']:
+                st.write(word.upper())
+                st.image('./signs/{}.jpg'.format(word.capitalize()), width=75)
+            else:
+                imageList = []
+                for letter in word:
+                    if letter not in ',.!?;:()':
+                        imageList.append(cv2.resize(cv2.imread('./signs/{}.jpg'.format(letter)), (75, 75)))
+
+                st.write(word)
+                st.image(cvzone.stackImages(imageList, 8 if len(imageList) >= 8 else len(imageList), 1), width=75*(8 if len(imageList) >=8 else len(imageList)))
+
+        # try:
+        #     image = Image.open('./signs/{}.jpg'.format(text))
+        #     st.success(f"Translated text is: ")
+        #     st.image(image, caption='Predicted sign')
+        # except:
+        #     st.error("No sign recognised")
         
 
 def sign_language_detector():
@@ -69,16 +127,8 @@ def sign_language_detector():
             self.ROI_right = 150
             self.ROI_left = 350
             self.background = None
-            self.accumulated_weight = 0.5 
-            self.model = keras.models.load_model("signModelNew")  
-
-        # def cal_accum_avg(self, frame, accumulated_weight):
-        #     global background
-        #     if self.background is None:
-        #         background = frame.copy().astype("float")
-        #         return None
-
-        #     cv2.accumulateWeighted(self, frame, self.background, accumulated_weight)
+            self.accumulated_weight = 0.5
+            self.model = keras.models.load_model("signModelNew")
 
         def segment_hand(self, frame, threshold=25):
             global background
@@ -98,12 +148,8 @@ def sign_language_detector():
             hands, img = self.detector.findHands(img)  # with draw
 
             if hands:
-                # Hand 1
                 hand1 = hands[0]
-                lmList1 = hand1["lmList"]  # List of 21 Landmark points
                 bbox1 = hand1["bbox"]  # Bounding box info x,y,w,h
-                centerPoint1 = hand1['center']  # center of the hand cx,cy
-                handType1 = hand1["type"]  # Handtype Left or Right
 
                 fingers1 = self.detector.fingersUp(hand1)
 
@@ -113,17 +159,11 @@ def sign_language_detector():
                 self.ROI_left = bbox1[2] + bbox1[0] + 20
 
                 if len(hands) == 2:
-                    # Hand 2
                     hand2 = hands[1]
-                    # lmList2 = hand2["lmList"]
                     bbox2 = hand2["bbox"]  # Bounding box info x,y,w,h
-                    # centerPoint2 = hand2['center']  # center of the hand cx,cy
                     handType2 = hand2["type"]
 
                     fingers2 = self.detector.fingersUp(hand2)
-
-                    # Find Distance between two Landmarks. Could be same hand or different hands
-                    # length, info, img = detector.findDistance(lmList1[8], lmList2[8], img)
 
                     absDiff = abs((bbox1[1] + bbox1[3]) - (bbox2[1] + bbox2[3]))
 
@@ -137,13 +177,9 @@ def sign_language_detector():
 
             if not hands:
                 cv2.putText(img, "No hands detected", (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
-                # cal_accum_avg(gray_frame, accumulated_weight)
-                # cv2.putText(frame_copy, "FETCHING BACKGROUND...PLEASE WAIT", (80, 400), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
 
             else:
-
                 hand = self.segment_hand(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY))
-
                 if hand is not None:
                     thresholded = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
                     (_, thresholded) = cv2.threshold(thresholded, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
