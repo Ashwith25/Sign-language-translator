@@ -1,4 +1,3 @@
-from turtle import right
 import keras
 from matplotlib.style import use
 from HandTrackingModule import HandDetector
