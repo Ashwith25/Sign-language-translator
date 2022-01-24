@@ -18,17 +18,19 @@ from streamlit_webrtc import (
     WebRtcMode,
     webrtc_streamer,
 )
-
-from PIL import Image
-import copy
-
+import pyaudio
 RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
 
 def takeCommand():
     r = sr.Recognizer()
+
+    audio = pyaudio.PyAudio()
+    st.write(audio.get_default_input_device_info())
+
     with sr.Microphone() as source:
+    
         r.adjust_for_ambient_noise(source, duration=2)
         with st.spinner('Listening...'):
             print("Listening...")
