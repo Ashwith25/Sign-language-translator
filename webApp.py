@@ -69,13 +69,68 @@ def main():
     elif app_mode == option2:
         text_speech_to_sign()
 
+units = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+        "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+        "sixteen", "seventeen", "eighteen", "nineteen",
+      ]
+
+tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+
+scales = ["hundred", "thousand", "million", "billion", "trillion"]
+
+def text2int(textnum, numwords={}):
+
+    if not numwords:
+      
+
+      numwords["and"] = (1, 0)
+      for idx, word in enumerate(units):    numwords[word] = (1, idx)
+      for idx, word in enumerate(tens):     numwords[word] = (1, idx * 10)
+      for idx, word in enumerate(scales):   numwords[word] = (10 ** (idx * 3 or 2), 0)
+
+    current = result = 0
+    for word in textnum.split():
+        if word not in numwords:
+          raise Exception("Illegal word: " + word)
+
+        scale, increment = numwords[word]
+        current = current * scale + increment
+        if scale > 100:
+            result += current
+            current = 0
+
+    return result + current
+
 def signGenerator(statement):
+    '''
+    It takes in a string, splits it into words, and then for each word, it checks if it is a number, a
+    unit, or a tens word. If it is, it converts it to a number and then converts that number to a list
+    of images. If it is not, it converts the word to a list of images. Then, it stacks the images into a
+    single image and displays it.
+    
+    :param statement: The statement to be converted to a sign
+    '''
     words = statement.split()
     words = [word.upper() for word in words if word not in '.,!?:;']
+
+    # for word in words:
+
     for word in words:
         if word.lower() in ['little', 'hi']:
             st.write(word.upper())
             st.image('./signs/{}.jpg'.format(word.capitalize()), width=75)
+
+        # elif word.lower() in units or word.lower() in tens:
+        #     number = text2int(word.lower())
+        #     imageList = []
+        #     for letter in str(number):
+        #         if letter not in ',.!?;:()':
+        #             imageList.append(cv2.resize(cv2.imread('./signs/{}.jpg'.format(letter)), (75, 75)))
+
+        #     st.write(word)
+        #     st.image(cvzone.stackImages(imageList, 8 if len(imageList) >= 8 else len(imageList), 1), width=75*(8 if len(imageList) >=8 else len(imageList)))
+
         else:
             imageList = []
             for letter in word:
@@ -86,6 +141,9 @@ def signGenerator(statement):
             st.image(cvzone.stackImages(imageList, 8 if len(imageList) >= 8 else len(imageList), 1), width=75*(8 if len(imageList) >=8 else len(imageList)))
 
 def text_speech_to_sign():
+    '''
+    It takes the text input from the user and converts it into a sign language image.
+    '''
 
     st.markdown(f'<h1 style="color:#33ff33; font-size:24px;">{"Text/Speech to Sign Language"}</h1>', unsafe_allow_html=True)
 
@@ -115,6 +173,7 @@ def text_speech_to_sign():
             #     st.error("No sign recognised")
     else:
         if st.button('Record', key='record'):
+
             query = takeCommand()
 
             if query is None:

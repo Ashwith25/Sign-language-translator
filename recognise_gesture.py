@@ -1,4 +1,5 @@
 import numpy as np
+np.set_printoptions(suppress=True)
 import cv2
 import keras
 from keras.preprocessing.image import ImageDataGenerator
@@ -14,9 +15,10 @@ voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[0].id)
 engine.setProperty('rate',180)
 
-word_dict = {0:'One', 1:'Two', 2:'Three', 3:'I Love You', 4:'Little'}
+# word_dict = {0:'One', 1:'Two', 2:'Three', 3:'A', 4:'I Love You', 5:'Little'}
+word_dict = {0:'One', 1:'Two', 2:'Three', 3: 'A', 4: 'B', 5: 'C', 6: 'D', 7: 'E', 8: 'Hi', 9: 'I Love You'}
 
-model = keras.models.load_model("signModelNew")
+model = keras.models.load_model("signForColor")
 background = None
 accumulated_weight = 0.5
 
@@ -29,15 +31,16 @@ def speak(audio):
     engine.say(audio)
     engine.runAndWait()
 
-def cal_accum_avg(frame, accumulated_weight):
-    global background
-    if background is None:
-        background = frame.copy().astype("float")
-        return None
+# def cal_accum_avg(frame, accumulated_weight):
+#     global background
+#     if background is None:
+#         background = frame.copy().astype("float")
+#         return None
 
-    cv2.accumulateWeighted(frame, background, accumulated_weight)
+#     cv2.accumulateWeighted(frame, background, accumulated_weight)
 
 def segment_hand(frame, threshold=25):
+
     global background
     # diff = cv2.absdiff(background.astype("uint8"), frame)
     _ , thresholded = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY)
@@ -112,21 +115,28 @@ while True:
 
     else:
         # print(roi)
-        hand = segment_hand(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY))
-        if hand is not None:
-            thresholded = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            (thresh, thresholded) = cv2.threshold(thresholded, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-            # cv2.drawContours(frame_copy, [hand_segment + (ROI_right, ROI_top)], -1, (255,128,0), 2)
-            cv2.imshow("Thresholded Hand Image", thresholded)
-            
-            thresholded = cv2.resize(thresholded, (64, 64))
-            thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2RGB)
-            thresholded = np.reshape(thresholded, (1,thresholded.shape[0],thresholded.shape[1],3))
+        # roi = segment_hand(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY))
+        # if hand is not None:
+        thresholded = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        thresholded = cv2.GaussianBlur(thresholded, (3, 3), cv2.BORDER_DEFAULT)
+        wide = cv2.Canny(thresholded, 60, 240)
+        cv2.imshow("med", wide)
+        # thresholded = cv2.adaptiveThreshold(thresholded, 255,cv2.ADAPTIVE_THRESH_MEAN_C,\
+        #     cv2.THRESH_BINARY,11,2)
+        (thresh, thresholded) = cv2.threshold(thresholded, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        # cv2.drawContours(frame_copy, [hand_segment + (ROI_right, ROI_top)], -1, (255,128,0), 2)
+        # thresholded = roi
+        cv2.imshow("Detected Hand Image", thresholded)
+        
+        thresholded = cv2.resize(thresholded, (64, 64))
+        thresholded = cv2.cvtColor(thresholded, cv2.COLOR_GRAY2RGB)
+        thresholded = np.reshape(thresholded, (1, thresholded.shape[0], thresholded.shape[1], 3)) # n, h, w, channels
 
-            pred = model.predict(thresholded)
-            predText = word_dict[np.argmax(pred)]
-            cv2.putText(frame_copy, predText, (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
-            # speak(predText)
+        pred = model.predict(thresholded)
+        # print(pred*100)
+        predText = word_dict[np.argmax(pred)]
+        cv2.putText(frame_copy, predText, (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
+        # speak(predText)
             
     cv2.rectangle(frame_copy, (ROI_left, ROI_top), (ROI_right, ROI_bottom), (255,128,0), 3)
     num_frames += 1

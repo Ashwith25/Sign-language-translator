@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from cvzone.HandTrackingModule import HandDetector
+from HandTrackingModule import HandDetector
 import cvzone
 
 background = None
@@ -11,13 +11,13 @@ ROI_bottom = 300
 ROI_right = 150
 ROI_left = 350
 
-def cal_accum_avg(frame, accumulated_weight):
-    global background
-    if background is None:
-        background = frame.copy().astype("float")
-        return None
+# def cal_accum_avg(frame, accumulated_weight):
+#     global background
+#     if background is None:
+#         background = frame.copy().astype("float")
+#         return None
         
-    cv2.accumulateWeighted(frame, background, accumulated_weight)
+#     cv2.accumulateWeighted(frame, background, accumulated_weight)
 
 def segment_hand(frame, threshold=25):
     # global background
@@ -45,7 +45,7 @@ cam = cv2.VideoCapture(0)
 detector = HandDetector(detectionCon=0.8, maxHands=2)
 
 num_frames = 0
-element = 'little'
+element = 'Hi'
 num_imgs_taken = 0
 
 while True:
@@ -76,27 +76,50 @@ while True:
         ROI_right =  bbox1[0] - 20
         ROI_left = bbox1[2] + bbox1[0] + 20
 
-    roi = frame[ROI_top:ROI_bottom, ROI_right:ROI_left]
+        if len(hands) == 2:
+            # Hand 2
+            hand2 = hands[1]
+            # lmList2 = hand2["lmList"]
+            bbox2 = hand2["bbox"]  # Bounding box info x,y,w,h
+            # centerPoint2 = hand2['center']  # center of the hand cx,cy
+            handType2 = hand2["type"]
 
-    gray_frame = frame
+            fingers2 = detector.fingersUp(hand2)
+
+            # Find Distance between two Landmarks. Could be same hand or different hands
+            # length, info, img = detector.findDistance(lmList1[8], lmList2[8], img)
+
+            absDiff = abs((bbox1[1] + bbox1[3]) - (bbox2[1] + bbox2[3]))
+
+            ROI_top = bbox1[1] - 20 if bbox1[1] < bbox2[1] else bbox2[1] - 20
+            ROI_bottom = bbox1[3] + bbox1[1] + 20 + absDiff if bbox1[1] < bbox2[1] else bbox2[3] + bbox2[1] + 20 + absDiff
+            ROI_right =  bbox1[0] - 20 if handType2 == 'Left' else bbox2[0] - 20
+            ROI_left = bbox1[2] + (bbox1[0] if handType2 == 'Left' else bbox2[0]) + bbox2[2] + 80
+
+    # roi = frame[ROI_top:ROI_bottom, ROI_right:ROI_left]
+    roi = frame[ROI_top if ROI_top >= 0 else 0 :ROI_bottom, ROI_right if ROI_right >= 0 else 0:ROI_left]
+
+    # gray_frame = frame
 
     # gray_frame = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     # gray_frame = cv2.GaussianBlur(gray_frame, (9, 9), 0)
 
     if num_frames < 60:
-        cal_accum_avg(gray_frame, accumulated_weight)
-        if num_frames <= 59:
-            cv2.putText(frame_copy, "FETCHING BACKGROUND...PLEASE WAIT", (80, 400), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
+        pass
+        # cal_accum_avg(gray_frame, accumulated_weight)
+        # if num_frames <= 59:
+        #     cv2.putText(frame_copy, "FETCHING BACKGROUND...PLEASE WAIT", (80, 400), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
             #cv2.imshow("Sign Detection",frame_copy)
          
-    elif num_frames <= 100: 
+    elif num_frames <= 100:
+        roi = cv2.GaussianBlur(roi, (9, 9), 0)
         hand = segment_hand(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY))
-        if hand is not None:
-            thresholded = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        if hands:
+            # thresholded = roi
             (thresh, thresholded) = cv2.threshold(thresholded, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
             cv2.putText(frame_copy, str(num_frames)+" For " + str(element), (70, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
             # cv2.drawContours(frame_copy, [hand_segment + (ROI_right, ROI_top)], -1, (255,128,0), 2)
-            cv2.imshow("Thresholded Hand Image", thresholded)
+            cv2.imshow("Detected Hand Image", thresholded)
 
         # hand = segment_hand(gray_frame)
         # cv2.putText(frame_copy, "Adjust hand...Gesture for " + str(element), (200, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
@@ -116,7 +139,6 @@ while True:
             cv2.putText(frame_copy, str(num_imgs_taken) + 'images' +" For " + str(element), (200, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
             # cv2.drawContours(frame_copy, [hand_segment + (ROI_right, ROI_top)], -1, (255,128,0), 2)
             cv2.imshow("Thresholded Hand Image", thresholded)
-
 
             # thresholded, hand_segment = hand
             # cv2.drawContours(frame_copy, [hand_segment + (ROI_right, ROI_top)], -1, (255,128,0),1)
