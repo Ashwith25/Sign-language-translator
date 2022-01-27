@@ -1,3 +1,4 @@
+from fileinput import filename
 import keras
 from matplotlib.style import use
 from HandTrackingModule import HandDetector
@@ -8,6 +9,9 @@ import cv2
 
 import numpy as np
 import streamlit as st
+import pydub
+import time
+import queue
 
 import speech_recognition as sr
 
@@ -23,31 +27,128 @@ RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
 
-def takeCommand():
-    r = sr.Recognizer()
+lm_alpha = 0.931289039105002
+lm_beta = 1.1834137581510284
+beam = 100
 
-    audio = pyaudio.PyAudio()
-    st.write(audio.get_default_input_device_info())
-
-    with sr.Microphone() as source:
+def app_stt():
+    '''
+    It takes the audio buffer, converts it to a wav file, and then uses Google's speech to text API to
+    convert the audio to text.
+    '''
     
-        r.adjust_for_ambient_noise(source, duration=2)
-        with st.spinner('Listening...'):
-            print("Listening...")
-            r.pause_threshold = 1
-            audio = r.listen(source)
-    try:
-        with st.spinner('Recognising...'):
-            print("Recognising...")
-            query = r.recognize_google(audio, language='en-in')
-            print(f"User said: {query}\n")
+    webrtc_ctx = webrtc_streamer(
+        key="speech-to-text",
+        mode=WebRtcMode.SENDONLY,
+        audio_receiver_size=2048,
+        rtc_configuration={
+                "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+            },
+        media_stream_constraints={"video": False, "audio": True},
+    )
 
-    except Exception as e:
-        print(e)
-        print("Say that again please...")  
-        return None
 
-    return query
+    if "audio_buffer" not in st.session_state:
+        st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
+
+    status_indicator = st.empty()
+
+    while True:
+        # with st.spinner("Loading..."):
+        #     pass
+            # while webrtc_ctx.audio_receiver:
+            #     pass
+
+
+        # for percent_complete in range(100):
+        #     time.sleep(0.1)
+        #     my_bar.progress(percent_complete + 1)
+        
+        if webrtc_ctx.audio_receiver:
+
+            try:
+                audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+            except queue.Empty:
+                status_indicator.write("No frame arrived.")
+                continue
+            
+            status_indicator.success("Running. Say something!")
+
+            sound_chunk = pydub.AudioSegment.empty()
+            for audio_frame in audio_frames:
+                sound = pydub.AudioSegment(
+                    data=audio_frame.to_ndarray().tobytes(),
+                    sample_width=audio_frame.format.bytes,
+                    frame_rate=audio_frame.sample_rate,
+                    channels=len(audio_frame.layout.channels),
+                )
+                sound_chunk += sound
+
+            if len(sound_chunk) > 0:
+                st.session_state["audio_buffer"] += sound_chunk
+
+        else:
+            # status_indicator.write("AudioReciver is not set. Abort.")
+            break
+
+    audio_buffer = st.session_state["audio_buffer"]
+
+    if not webrtc_ctx.state.playing and len(audio_buffer) > 0:
+        # st.info("Writing wav to disk")
+        # audio_buffer.export("temp.wav", format="wav")
+        filename = "audio.wav"
+        audio_buffer.export(filename, format ="wav")
+        AUDIO_FILE = filename
+
+        r = sr.Recognizer()
+        with sr.AudioFile(AUDIO_FILE) as source:
+            audio_listened = r.listen(source)
+
+        try:
+            text = r.recognize_google(audio_listened, language='en-in')
+            # print(text)
+            if text is None:
+                st.error("Speech recognition failed, Please try again")
+            else:
+                st.write("You said: ")
+                st.success(text)
+                signGenerator(text)
+        
+        except sr.UnknownValueError:
+            st.error("Speech recognition failed, Please try again")
+            pass
+
+        except sr.RequestError as e:
+            print("Could not request results.")
+
+        # Reset
+        st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
+
+# def takeCommand():
+#     r = sr.Recognizer()
+
+#     audio = pyaudio.PyAudio()
+#     # st.write(audio.get_default_input_device_info())
+
+#     with sr.Microphone() as source:
+    
+#         r.adjust_for_ambient_noise(source, duration=2)
+#         with st.spinner('Listening...'):
+#             print("Listening...")
+#             r.pause_threshold = 1
+#             audio = r.listen(source)
+#     try:
+#         with st.spinner('Recognising...'):
+#             print("Recognising...")
+#             query = r.recognize_google(audio, language='en-in')
+#             print(f"User said: {query}\n")
+
+#     except Exception as e:
+#         print(e)
+#         print("Say that again please...")  
+#         return None
+
+#     return query
 
 def main():
     st.header("Indian Sign Language Translation using Human-Computer Interaction")
@@ -151,8 +252,6 @@ def text_speech_to_sign():
      'How would you like to convey the message?',
      ('Text to Sign Language', 'Speech to Sign Language'))
 
-    st.write('You selected:', option)
-
     if option == 'Text to Sign Language':
         text = st.text_area("Enter the text to be translated", "")
         text = text.lower()
@@ -172,16 +271,21 @@ def text_speech_to_sign():
             # except:
             #     st.error("No sign recognised")
     else:
-        if st.button('Record', key='record'):
+        # if st.button('Record', key='record'):
 
-            query = takeCommand()
+            # query = takeCommand()
+        # with st.spinner('Loading...'):
+        st.info('''Please wait till the microphone is initialised and ready message is displayed.
+                   Once the microphone is ready, start speaking and then click on the button again to stop recording.''')
+                   
+        app_stt()
 
-            if query is None:
-                st.error("Speech recognition failed, Please try again")
-            else:
-                st.write("You said: ")
-                st.success(query)
-                signGenerator(query)
+        # if query is None:
+        #     st.error("Speech recognition failed, Please try again")
+        # else:
+        #     st.write("You said: ")
+        #     st.success(query)
+        #     signGenerator(query)
 
 def sign_language_detector():
     st.markdown(f'<h1 style="color:#33ff33; font-size:24px;">{"Sign Language to Text/Speech"}</h1>', unsafe_allow_html=True)

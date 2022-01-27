@@ -100,6 +100,7 @@ PyAudio==0.2.11
 pyasn1-modules==0.2.8
 pycparser==2.21
 pydeck==0.7.1
+pydub==0.25.1
 pyee==9.0.3
 Pygments==2.11.2
 pylibsrtp==0.7.0
