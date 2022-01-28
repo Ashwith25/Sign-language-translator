@@ -36,6 +36,8 @@ def app_stt():
     It takes the audio buffer, converts it to a wav file, and then uses Google's speech to text API to
     convert the audio to text.
     '''
+
+    # st.write("testing")
     
     webrtc_ctx = webrtc_streamer(
         key="speech-to-text",
@@ -47,6 +49,7 @@ def app_stt():
         media_stream_constraints={"video": False, "audio": True},
     )
 
+    # st.write("testing 2")
 
     if "audio_buffer" not in st.session_state:
         st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
@@ -222,15 +225,15 @@ def signGenerator(statement):
             st.write(word.upper())
             st.image('./signs/{}.jpg'.format(word.capitalize()), width=75)
 
-        # elif word.lower() in units or word.lower() in tens:
-        #     number = text2int(word.lower())
-        #     imageList = []
-        #     for letter in str(number):
-        #         if letter not in ',.!?;:()':
-        #             imageList.append(cv2.resize(cv2.imread('./signs/{}.jpg'.format(letter)), (75, 75)))
+        elif word.lower() in units:
+            number = text2int(word.lower())
+            imageList = []
+            for letter in str(number):
+                if letter not in ',.!?;:()':
+                    imageList.append(cv2.resize(cv2.imread('./signs/{}.jpg'.format(letter)), (75, 75)))
 
-        #     st.write(word)
-        #     st.image(cvzone.stackImages(imageList, 8 if len(imageList) >= 8 else len(imageList), 1), width=75*(8 if len(imageList) >=8 else len(imageList)))
+            st.write(word)
+            st.image(cvzone.stackImages(imageList, 8 if len(imageList) >= 8 else len(imageList), 1), width=75*(8 if len(imageList) >=8 else len(imageList)))
 
         else:
             imageList = []
