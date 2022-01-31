@@ -1,6 +1,4 @@
-from fileinput import filename
 import keras
-from matplotlib.style import use
 from HandTrackingModule import HandDetector
 import cvzone
 
@@ -10,19 +8,17 @@ import cv2
 import numpy as np
 import streamlit as st
 import pydub
-import time
 import queue
 
 import speech_recognition as sr
 
 from streamlit_webrtc import (
-    AudioProcessorBase,
     RTCConfiguration,
     VideoProcessorBase,
     WebRtcMode,
     webrtc_streamer,
 )
-import pyaudio
+
 RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
@@ -62,11 +58,10 @@ def app_stt():
             # while webrtc_ctx.audio_receiver:
             #     pass
 
-
         # for percent_complete in range(100):
         #     time.sleep(0.1)
         #     my_bar.progress(percent_complete + 1)
-        
+
         if webrtc_ctx.audio_receiver:
 
             try:
@@ -74,7 +69,7 @@ def app_stt():
             except queue.Empty:
                 status_indicator.write("No frame arrived.")
                 continue
-            
+
             status_indicator.success("Running. Say something!")
 
             sound_chunk = pydub.AudioSegment.empty()
@@ -207,6 +202,7 @@ def text2int(textnum, numwords={}):
     return result + current
 
 def signGenerator(statement):
+
     '''
     It takes in a string, splits it into words, and then for each word, it checks if it is a number, a
     unit, or a tens word. If it is, it converts it to a number and then converts that number to a list
@@ -215,6 +211,7 @@ def signGenerator(statement):
     
     :param statement: The statement to be converted to a sign
     '''
+
     words = statement.split()
     words = [word.upper() for word in words if word not in '.,!?:;']
 

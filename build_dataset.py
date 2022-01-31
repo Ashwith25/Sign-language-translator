@@ -148,7 +148,7 @@ while True:
             # cv2.imshow("Thresholded Hand Image", thresholded)
 
             if num_imgs_taken <= 150:
-                cv2.imwrite(r"D:\\gestures\\test\\"+str(element)+"\\" + str(num_imgs_taken) + '.jpg', thresholded)
+                cv2.imwrite(r"gestures\\test\\"+str(element)+"\\" + str(num_imgs_taken) + '.jpg', thresholded)
             else:
                 break
             num_imgs_taken +=1
