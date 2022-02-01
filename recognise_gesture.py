@@ -15,10 +15,11 @@ voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[0].id)
 engine.setProperty('rate',180)
 
-# word_dict = {0:'One', 1:'Two', 2:'Three', 3:'A', 4:'I Love You', 5:'Little'}
-word_dict = {0:'One', 1:'Two', 2:'Three', 3: 'A', 4: 'B', 5: 'C', 6: 'D', 7: 'E', 8: 'Hi', 9: 'I Love You'}
+word_dict = {0:'One', 1:'Two', 2:'Three', 3:'A', 4:'I Love You', 5:'Little'} # Sort it according to the folder names
 
-model = keras.models.load_model("signForColor")
+model = keras.models.load_model("signForBW") # For Ashwith's system
+# model = keras.models.load_model(r"sign_model.h5") # for Manasi's system
+
 background = None
 accumulated_weight = 0.5
 

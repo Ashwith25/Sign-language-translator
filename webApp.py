@@ -11,6 +11,7 @@ import pydub
 import queue
 
 import speech_recognition as sr
+from PIL import Image
 
 from streamlit_webrtc import (
     RTCConfiguration,
@@ -150,10 +151,11 @@ def app_stt():
 
 def main():
     st.header("Indian Sign Language Translation using Human-Computer Interaction")
-    
+
     option1 = "Sign Language to Text/Speech"
     option2 = "Text/Speech to Sign Language"
 
+    st.sidebar.image("logo.png")
     st.sidebar.title("Options")
 
     app_mode = st.sidebar.selectbox( "Choose the app mode",
@@ -376,4 +378,5 @@ def sign_language_detector():
     )
 
 if __name__ == "__main__":
+    st.set_page_config(page_title="Signspeak", page_icon="signspeak.png")
     main()
