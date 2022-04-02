@@ -15,10 +15,10 @@ import speech_recognition as sr
 import pyttsx3
 
 #audio of system to respond
-engine = pyttsx3.init('sapi5')
-voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[0].id)
-engine.setProperty('rate',180)
+# engine = pyttsx3.init('sapi5')
+# voices = engine.getProperty('voices')
+# engine.setProperty('voice', voices[0].id)
+# engine.setProperty('rate',180)
 
 from streamlit_webrtc import (
     RTCConfiguration,
