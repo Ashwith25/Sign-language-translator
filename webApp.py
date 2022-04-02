@@ -11,7 +11,14 @@ import pydub
 import queue
 
 import speech_recognition as sr
-from PIL import Image
+
+import pyttsx3
+
+#audio of system to respond
+engine = pyttsx3.init('sapi5')
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id)
+engine.setProperty('rate',180)
 
 from streamlit_webrtc import (
     RTCConfiguration,
@@ -27,6 +34,12 @@ RTC_CONFIGURATION = RTCConfiguration(
 lm_alpha = 0.931289039105002
 lm_beta = 1.1834137581510284
 beam = 100
+
+previous_sign = ''
+
+def speak(audio):
+    engine.say(audio)
+    # engine.runAndWait()
 
 def app_stt():
     '''
@@ -150,7 +163,7 @@ def app_stt():
 #     return query
 
 def main():
-    st.header("Indian Sign Language Translation using Human-Computer Interaction")
+    st.header("Indian Sign Language Translation For Hard-of-Hearing and Hard-of-speaking Community")
 
     option1 = "Sign Language to Text/Speech"
     option2 = "Text/Speech to Sign Language"
@@ -313,6 +326,7 @@ def sign_language_detector():
             return thresholded
 
         def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
+            global previous_sign
             img = frame.to_ndarray(format="bgr24")
             word_dict = {0:'One', 1:'Two', 2:'Three', 3:'I Love You', 4:'Little'}
 
@@ -324,7 +338,7 @@ def sign_language_detector():
                 hand1 = hands[0]
                 bbox1 = hand1["bbox"]  # Bounding box info x,y,w,h
 
-                fingers1 = self.detector.fingersUp(hand1)
+                # fingers1 = self.detector.fingersUp(hand1)
 
                 self.ROI_top = bbox1[1] - 20
                 self.ROI_bottom = bbox1[3] + bbox1[1] + 20
@@ -364,6 +378,10 @@ def sign_language_detector():
                     pred = self.model.predict(thresholded)
                     predText = word_dict[np.argmax(pred)]
                     cv2.putText(img, predText, (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
+                    # if predText != previous_sign:
+                    #     print("not same")
+                    #     speak(predText)
+                    #     previous_sign = predText
                         
                 cv2.rectangle(img, (self.ROI_left, self.ROI_top), (self.ROI_right, self.ROI_bottom), (255,128,0), 3)
             

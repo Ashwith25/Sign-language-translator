@@ -15,9 +15,9 @@ voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[0].id)
 engine.setProperty('rate',180)
 
-word_dict = {0:'One', 1:'Two', 2:'Three', 3:'A', 4:'I Love You', 5:'Little'} # Sort it according to the folder names
+word_dict = {0:'One', 1:'Two', 2:'Three', 3:'I Love You', 4:'Little'} # Sort it according to the folder names
 
-model = keras.models.load_model("signForBW") # For Ashwith's system
+model = keras.models.load_model("signModelNew") # For Ashwith's system
 # model = keras.models.load_model(r"sign_model.h5") # for Manasi's system
 
 background = None
@@ -27,6 +27,8 @@ ROI_top = 100
 ROI_bottom = 300
 ROI_right = 150
 ROI_left = 350
+
+previous_sign = ''
 
 def speak(audio):
     engine.say(audio)
@@ -137,6 +139,10 @@ while True:
         # print(pred*100)
         predText = word_dict[np.argmax(pred)]
         cv2.putText(frame_copy, predText, (170, 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,165,255), 2)
+
+        if predText != previous_sign:
+            speak(predText)
+            previous_sign = predText
         # speak(predText)
             
     cv2.rectangle(frame_copy, (ROI_left, ROI_top), (ROI_right, ROI_bottom), (255,128,0), 3)
